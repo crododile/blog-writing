@@ -1,0 +1,13 @@
+0. phonegap, cordova, ionic, hybrid app
+1. very quick setup/ starter project
+2. customize their css
+3. some native plugin
+4. a map
+5. weather
+6. rest api's
+6.1 XORS configuration
+?. testing
+7. emulator, phone, building
+8. xcode, keys, stores
+9. enjyo your apps
+

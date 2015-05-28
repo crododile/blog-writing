@@ -13,8 +13,8 @@ In Ruby, we'd do something like this
   "Metova".upcase.reverse.split('') ##["A", "V", "O", "T", "E", "M"]
 </code>
 
-These look similar at first glance, with Ruby being more sentence-like. There is a key difference, however.
-The Ruby methods must be defined on the item being returned from each method call in the chain ( i.e. "String" objects ). Elixir is a functional language, so the data being passed ( the string 'Metova' ) along is simply data. It must be passed as an argument to functions defined in the String module. This is worth stating another way. In Ruby method chains, the return value of the previous method is the <em>receiver</em> of the next message in the chain. In Elixir pipes, the return value of the previous function is the <em>argument</em> to the next function in the chain. This is illustrative of a fundamental difference between Functional Programming and Object Oriented Programming.
+These look similar at first glance, with Ruby being more sentence-like. There is a key difference, however.<br>
+The Ruby methods must be defined on the item being returned from each method call in the chain ( i.e. "String" objects ). Elixir is a functional language, so the data being passed ( the string 'Metova' ) along is simply data. It is contains no internal properties other than the string of bytes necessary to spell 'Metova'. It must be passed as an argument to functions defined in the String module. This is worth stating another way. In Ruby method chains, the return value of the previous method is the <em>receiver</em> of the next message in the chain. In Elixir pipes, the return value of the previous function is the <em>argument</em> to the next function in the chain. This is illustrative of a fundamental difference between Functional Programming and Object Oriented Programming.
 
 Let's take a closer look 
 <code>
@@ -41,21 +41,46 @@ We'll try to call it like this
 
   "Metova".pipe(:String.upcase).pipe(:reverse).pipe(:split, "")
 
-Because we want to use it in any situation, we'll define pipe on Object
+
+<code>
+#Because we want to use it in any situation, we'll define pipe on Object
+#No, I do not advocate monkey patching the Object Class, this is for investigational purposes only
 
 class Object
-  def pipe(args)
+  def pipe(*args)
     #first argument will be the method we want to send
-    meth, otherArgs = args.take(1), args.drop(1)
+    #the rest will be any arguments to the method
+    meth, otherArgs = args[0], args.drop(1)
     
-    #remember pipe is actually being called on the return value of the previous method call, which we want to pass as the first argument
+    #remember, pipe is actually being called on the return value of the previous method call,
+    #which we want to pass as the first argument to our quasi-functional method call.
     firstArg = self
-    
-    method(meth).call(firstArg, *otherArgs)
-    #method is like the functional version of send it's pretty cool and you should check it out. http://ruby-doc.org/core-2.2.0/Method.html (It's listed under meth in the docs for some reason )
+
+    #Method is like the Send's quasi-functional brother. It's pretty cool and you should check it out.
+    #http://ruby-doc.org/core-2.2.0/Method.html (It's listed under meth in the docs for some reason )
+    otherArgs.empty? ? firstArg.method(meth).call : firstArg.method(meth).call(*otherArgs)
   end
 end
-  
-Another way to emulate this behaviour in ruby is to chain map blocks. This is unzip(file).map{|z| to_temp(z) }.map{|f| make_book(f) }
-</pre>
-  
+
+p "Metova".pipe(:upcase).pipe(:reverse).pipe(:split, "")
+# ["A", "V", "O", "T", "E", "M"]
+</code>
+
+In the end, we've gained basically nothing with this. After going around in a circle, we're still sending the same methods to the same returned object. The fact is, Object Orientation is baked into the Ruby language. Ruby core methods ( and other good Ruby ) will often return a value of the same class as the original method recipient, or even the receiver itself ( self ), perhaps transformed. Method chaining is an extremely useful result of this pattern. 
+
+We've discovered that the hard-baked Object Orientation of the Ruby Core will not allow us to create a version of 'pipe' that is more useful than method chaining, at least for using the Ruby Core. Still though, we'll try again to create a version of pipe that doesn't amount a less readable version of method chaining. Our goal is to have the returned value from the prepipe function be passed as the argument to the post pipe function. Because all functions live as attached to Objects, we'll need to pass in the actual Objects that are ultimately doing the calling, as well as the method name.
+
+In short, we want some syntactic sugar for this pattern:
+<code>
+#turn this...
+result1 = foo(result0)
+result2 = bar(result1)
+result3 = baz(result2)
+
+#into this
+result1.pipe2("foo").pipe2("bar").pipe2("baz")
+
+</code>
+
+We'll try again to emulate this pattern in part 2.
+
